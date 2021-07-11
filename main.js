@@ -62,24 +62,35 @@ var app = http.createServer(function(request,response){
       }
     } else if(pathname === '/create'){
       db.query(`SELECT * FROM topic`, function(error, topics){
-        var title = 'Create';
-        var list = template.list(topics);
-        var html = template.HTML(title, list,
-          `
-          <form action="/create_process" method="post">
-            <p><input type="text" name="title" placeholder="title"></p>
-            <p>
-              <textarea name="description" placeholder="description"></textarea>
-            </p>
-            <p>
-              <input type="submit">
-            </p>
-          </form>
-          `,
-          `<a href="/create">create</a>`
-        );
-        response.writeHead(200);
-        response.end(html);
+        if (error){
+          throw error;
+        }
+        db.query(`SELECT * FROM author`, function(error2, authors){
+          if (error2){
+            throw error2;
+          }
+          var title = 'Create';
+          var list = template.list(topics);
+          var html = template.HTML(title, list,
+            `
+            <form action="/create_process" method="post">
+              <p><input type="text" name="title" placeholder="title"></p>
+              <p>
+                <textarea name="description" placeholder="description"></textarea>
+              </p>
+              <p>
+                ${template.authorselect(authors)}
+              </p>
+              <p>
+                <input type="submit">
+              </p>
+            </form>
+            `,
+            `<a href="/create">create</a>`
+          );
+          response.writeHead(200);
+          response.end(html);
+        });
       });
     } else if(pathname === '/create_process'){
       var body = '';
@@ -90,7 +101,7 @@ var app = http.createServer(function(request,response){
           var post = qs.parse(body);
           db.query(`INSERT INTO topic (title, description, created, author_id)
            VALUES(?, ?, NOW(), ?)`,
-           [post.title, post.description, 1],
+           [post.title, post.description, post.author],
            function(error, result){
             if (error){
               throw error;
